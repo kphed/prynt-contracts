@@ -4,8 +4,9 @@ pragma solidity ^0.8.0;
 import {LibString} from "solady/utils/LibString.sol";
 import {ERC721} from "solady/tokens/ERC721.sol";
 import {Ownable} from "solady/auth/Ownable.sol";
+import {CallbackConsumer} from "infernet-sdk/consumer/Callback.sol";
 
-contract Prynt is Ownable, ERC721 {
+contract Prynt is Ownable, CallbackConsumer, ERC721 {
     using LibString for uint256;
 
     /// @notice The duration of each round in seconds.
@@ -19,7 +20,11 @@ contract Prynt is Ownable, ERC721 {
 
     event SetBaseURI(string);
 
-    constructor(uint256 roundDuration_, uint256 startTime_) {
+    constructor(
+        uint256 roundDuration_,
+        uint256 startTime_,
+        address registry
+    ) CallbackConsumer(registry) {
         roundDuration = roundDuration_;
         startTime = startTime_;
 
