@@ -2,15 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import {Opus} from "src/Opus.sol";
+import {Prynt} from "src/Prynt.sol";
 
-contract OpusTest is Test {
+contract PryntTest is Test {
     uint256 public constant ROUND_DURATION = 14 days;
     uint256 public immutable startTime = block.timestamp;
-    Opus public immutable opus;
+    Prynt public immutable prynt;
 
     constructor() {
-        opus = new Opus(ROUND_DURATION, startTime);
+        prynt = new Prynt(ROUND_DURATION, startTime);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -18,17 +18,20 @@ contract OpusTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testConstructor() external view {
-        assertEq(opus.roundDuration(), ROUND_DURATION);
-        assertEq(opus.startTime(), startTime);
+        assertEq(prynt.roundDuration(), ROUND_DURATION);
+        assertEq(prynt.startTime(), startTime);
     }
 
     function testConstructorFuzz(
         uint256 roundDuration_,
-        uint256 startTime_
+        uint256 startTime_,
+        address msgSender
     ) external {
-        Opus opus_ = new Opus(roundDuration_, startTime_);
+        vm.prank(msgSender);
 
-        assertEq(opus_.roundDuration(), roundDuration_);
-        assertEq(opus_.startTime(), startTime_);
+        Prynt fuzzPrynt = new Prynt(roundDuration_, startTime_);
+
+        assertEq(fuzzPrynt.roundDuration(), roundDuration_);
+        assertEq(fuzzPrynt.startTime(), startTime_);
     }
 }

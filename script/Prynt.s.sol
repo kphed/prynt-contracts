@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
 
-contract OpusScript is Script {
+contract PryntScript is Script {
     function setUp() public {}
 
     function run() public {
