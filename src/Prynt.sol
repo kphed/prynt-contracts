@@ -8,13 +8,13 @@ import {Ownable} from "solady/auth/Ownable.sol";
 contract Prynt is Ownable, ERC721 {
     using LibString for uint256;
 
-    /// @dev The duration of each trading competition in seconds.
+    /// @notice The duration of each round in seconds.
     uint256 public immutable roundDuration;
 
-    /// @dev The timestamp of when the first trading competition starts.
+    /// @notice The timestamp of when the first round starts.
     uint256 public immutable startTime;
 
-    /// @dev The base token URI.
+    /// @notice The base token URI.
     string public baseURI;
 
     event SetBaseURI(string);
@@ -26,23 +26,37 @@ contract Prynt is Ownable, ERC721 {
         _initializeOwner(msg.sender);
     }
 
+    /**
+     * @notice Sets `baseURI`.
+     * @param  baseURI_  string  Token base URI.
+     */
     function setBaseURI(string memory baseURI_) external onlyOwner {
         baseURI = baseURI_;
 
         emit SetBaseURI(baseURI_);
     }
 
-    /// @dev Returns the token collection name.
+    /**
+     * @notice Returns the token collection name.
+     * @return string  Token collection name.
+     */
     function name() public pure override returns (string memory) {
         return "Prynt DAO";
     }
 
-    /// @dev Returns the token collection symbol.
+    /**
+     * @notice Returns the token collection symbol.
+     * @return string  Token collection symbol.
+     */
     function symbol() public pure override returns (string memory) {
         return "PRYNT";
     }
 
-    /// @dev Returns the Uniform Resource Identifier (URI) for token `id`.
+    /**
+     * @notice Returns the URI for a token ID.
+     * @param  id  uint256  The token identifier.
+     * @return     string   Token URI.
+     */
     function tokenURI(uint256 id) public view override returns (string memory) {
         return string.concat(baseURI, id.toString());
     }
