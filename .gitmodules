@@ -7,3 +7,6 @@
 [submodule "lib/soledge"]
 	path = lib/soledge
 	url = https://github.com/Vectorized/soledge
+[submodule "lib/infernet-sdk"]
+	path = lib/infernet-sdk
+	url = https://github.com/ritual-net/infernet-sdk
