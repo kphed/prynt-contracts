@@ -1,6 +1,9 @@
+name: forge-test
+
 on: [push]
 
-name: test
+env:
+  FOUNDRY_PROFILE: ci
 
 jobs:
   check:
@@ -16,5 +19,10 @@ jobs:
         with:
           version: nightly
 
-      - name: Run tests
-        run: forge test -vvv
+      - name: Run Forge tests
+        env:
+          FOUNDRY_PROFILE: default
+          BASE_RPC: ${{ secrets.BASE_RPC }}
+        run: |
+          forge test -vvv --fuzz-runs 1000 --rpc-url "$BASE_RPC"
+        id: test
