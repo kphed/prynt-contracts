@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import {LibString} from "solady/utils/LibString.sol";
 import {CallbackConsumer} from "infernet-sdk/consumer/Callback.sol";
-import {PryntNFT} from "src/PryntNFT.sol";
+import {PryntERC721} from "src/PryntERC721.sol";
 import {PryntERC20} from "src/PryntERC20.sol";
 
-contract Prynt is CallbackConsumer, PryntNFT {
+contract Prynt is CallbackConsumer, PryntERC721 {
     using LibString for uint256;
 
     string private constant _COMPUTE_CONTAINER_ID = "prompt-to-nft";

@@ -3,8 +3,19 @@ pragma solidity ^0.8.0;
 
 import {ERC721} from "solady/tokens/ERC721.sol";
 import {Ownable} from "solady/auth/Ownable.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {Votes} from "@openzeppelin/contracts/governance/utils/Votes.sol";
 
-contract PryntNFT is Ownable, ERC721 {
+contract PryntERC721 is Ownable, ERC721, Votes {
+    /// @notice EIP712 domain name (the user readable name of the signing domain).
+    string private constant _EIP712_DOMAIN_NAME = "Prynt DAO";
+
+    /// @notice EIP712 domain version (the current major version of the signing domain).
+    string private constant _EIP712_DOMAIN_VERSION = "1";
+
+    /// @notice Voting unit.
+    uint256 private constant _VOTE_TRANSFER_UNIT = 1;
+
     /// @notice Base token URI.
     string public baseURI = "";
 
@@ -13,8 +24,28 @@ contract PryntNFT is Ownable, ERC721 {
 
     event SetBaseURI(string baseURI);
 
-    constructor() {
+    constructor() EIP712(_EIP712_DOMAIN_NAME, _EIP712_DOMAIN_VERSION) {
         _initializeOwner(msg.sender);
+    }
+
+    /**
+     * @dev Update voting units to reflect the token transfer.
+     */
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256
+    ) internal override {
+        _transferVotingUnits(from, to, _VOTE_TRANSFER_UNIT);
+    }
+
+    /**
+     * @notice Returns the balance of `account`.
+     */
+    function _getVotingUnits(
+        address account
+    ) internal view override returns (uint256) {
+        return balanceOf(account);
     }
 
     /**
