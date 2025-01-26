@@ -9,26 +9,65 @@ import {CallbackConsumer} from "infernet-sdk/consumer/Callback.sol";
 contract Prynt is Ownable, CallbackConsumer, ERC721 {
     using LibString for uint256;
 
-    /// @notice The duration of each round in seconds.
+    string private constant _COMPUTE_CONTAINER_ID = "prompt-to-nft";
+    address private constant _COMPUTE_PAYMENT_TOKEN = address(0);
+    uint16 private constant _COMPUTE_REDUNDANCY = 1;
+    address private constant _COMPUTE_PAYER = address(0);
+    address private constant _COMPUTE_PROOF_VERIFIER = address(0);
+
+    /// @notice Duration of each round in seconds.
     uint256 public immutable roundDuration;
 
-    /// @notice The timestamp of when the first round starts.
-    uint256 public immutable startTime;
+    /// @notice Timestamp of when the next round starts.
+    uint256 public nextRoundStart;
 
-    /// @notice The base token URI.
-    string public baseURI;
+    /// @notice Base token URI.
+    string public baseURI = "";
 
-    event SetBaseURI(string);
+    /// @notice Next token identifier.
+    uint256 public nextTokenId = 1;
+
+    /// @notice Token metadata by id.
+    mapping(uint256 tokenId => string metadataHash) public tokenMetadata;
+
+    event SetBaseURI(string baseURI);
+    event StartRound(uint32 subscriptionId);
+
+    error TooEarly();
 
     constructor(
         uint256 roundDuration_,
-        uint256 startTime_,
+        uint256 nextRoundStart_,
         address registry
     ) CallbackConsumer(registry) {
         roundDuration = roundDuration_;
-        startTime = startTime_;
+        nextRoundStart = nextRoundStart_;
 
         _initializeOwner(msg.sender);
+    }
+
+    /**
+     * @notice Handle compute request output.
+     * @param  output  bytes  Compute request output.
+     */
+    function _receiveCompute(
+        uint32,
+        uint32,
+        uint16,
+        address,
+        bytes calldata,
+        bytes calldata output,
+        bytes calldata,
+        bytes32,
+        uint256
+    ) internal override {
+        (, bytes memory processedOutput) = abi.decode(output, (bytes, bytes));
+        tokenMetadata[nextTokenId] = abi.decode(processedOutput, (string));
+
+        _mint(address(this), nextTokenId);
+
+        nextRoundStart += roundDuration;
+        nextTokenId += 1;
     }
 
     /**
@@ -63,6 +102,31 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
      * @return     string   Token URI.
      */
     function tokenURI(uint256 id) public view override returns (string memory) {
-        return string.concat(baseURI, id.toString());
+        return string.concat(baseURI, tokenMetadata[id]);
+    }
+
+    /**
+     * @notice Start a round.
+     * @param  prompt          string   Token identifier.
+     * @param  paymentAmount   uint256  Compute request payment amount.
+     * @return subscriptionId  uint32   Compute request identifier.
+     */
+    function startRound(
+        string calldata prompt,
+        uint256 paymentAmount
+    ) external onlyOwner returns (uint32 subscriptionId) {
+        if (nextRoundStart > block.timestamp) revert TooEarly();
+
+        subscriptionId = _requestCompute(
+            _COMPUTE_CONTAINER_ID,
+            abi.encode(prompt, address(this)),
+            _COMPUTE_REDUNDANCY,
+            _COMPUTE_PAYMENT_TOKEN,
+            paymentAmount,
+            _COMPUTE_PAYER,
+            _COMPUTE_PROOF_VERIFIER
+        );
+
+        emit StartRound(subscriptionId);
     }
 }
