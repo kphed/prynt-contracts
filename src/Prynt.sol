@@ -21,7 +21,7 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
     /// @notice Base token URI.
     string public baseURI = "";
 
-    /// @notice Next token identifier.
+    /// @notice Next token id.
     uint256 public nextTokenId = 1;
 
     /// @notice Timestamp of when the next round can start.
@@ -33,11 +33,15 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
     /// @notice Token metadata by id.
     mapping(uint256 tokenId => string metadataHash) public tokenMetadata;
 
+    /// @notice Pending compute requests by token id.
+    mapping(uint256 tokenId => uint256 subscriptionId) public pendingRequests;
+
     event SetBaseURI(string baseURI);
-    event StartRound(uint32 subscriptionId);
+    event StartRound(uint256 nextTokenId, uint32 subscriptionId);
 
     error TooEarly();
     error NotLeader();
+    error StaleRequest();
 
     constructor(
         uint256 roundDuration_,
@@ -53,7 +57,7 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
      * @param  output  bytes  Compute request output.
      */
     function _receiveCompute(
-        uint32,
+        uint32 subscriptionId,
         uint32,
         uint16,
         address,
@@ -63,6 +67,10 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
         bytes32,
         uint256
     ) internal override {
+        // Prevent previous compute requests for the current `nextTokenId` from modifying state.
+        if (pendingRequests[nextTokenId] != subscriptionId)
+            revert StaleRequest();
+
         (, bytes memory processedOutput) = abi.decode(output, (bytes, bytes));
         tokenMetadata[nextTokenId] = abi.decode(processedOutput, (string));
 
@@ -101,7 +109,7 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
 
     /**
      * @notice Returns the URI for a token ID.
-     * @param  id  uint256  The token identifier.
+     * @param  id  uint256  The token id.
      * @return     string   Token URI.
      */
     function tokenURI(uint256 id) public view override returns (string memory) {
@@ -110,9 +118,9 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
 
     /**
      * @notice Start a round.
-     * @param  prompt          string   Token identifier.
+     * @param  prompt          string   Token id.
      * @param  paymentAmount   uint256  Compute request payment amount.
-     * @return subscriptionId  uint32   Compute request identifier.
+     * @return subscriptionId  uint32   Compute request id.
      */
     function startRound(
         string calldata prompt,
@@ -130,7 +138,8 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
             _COMPUTE_PAYER,
             _COMPUTE_PROOF_VERIFIER
         );
+        pendingRequests[nextTokenId] = subscriptionId;
 
-        emit StartRound(subscriptionId);
+        emit StartRound(nextTokenId, subscriptionId);
     }
 }
