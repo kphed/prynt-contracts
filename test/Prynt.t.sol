@@ -11,7 +11,7 @@ contract PryntTest is InfernetSDK {
     Prynt public immutable prynt;
 
     constructor() {
-        prynt = new Prynt(ROUND_DURATION, startTime, address(registry));
+        prynt = new Prynt(ROUND_DURATION, address(registry));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -20,23 +20,16 @@ contract PryntTest is InfernetSDK {
 
     function testConstructor() external view {
         assertEq(prynt.roundDuration(), ROUND_DURATION);
-        assertEq(prynt.startTime(), startTime);
     }
 
     function testConstructorFuzz(
         uint256 roundDuration_,
-        uint256 startTime_,
         address msgSender
     ) external {
         vm.prank(msgSender);
 
-        Prynt fuzzPrynt = new Prynt(
-            roundDuration_,
-            startTime_,
-            address(registry)
-        );
+        Prynt fuzzPrynt = new Prynt(roundDuration_, address(registry));
 
         assertEq(fuzzPrynt.roundDuration(), roundDuration_);
-        assertEq(fuzzPrynt.startTime(), startTime_);
     }
 }

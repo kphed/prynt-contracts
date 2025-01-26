@@ -11,6 +11,6 @@ contract PryntScript is Script {
     function run() public {
         vm.broadcast(vm.envUint("PRIVATE_KEY"));
 
-        new Prynt(14 days, 0, _REGISTRY);
+        new Prynt(14 days, _REGISTRY);
     }
 }

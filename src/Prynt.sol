@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {LibString} from "solady/utils/LibString.sol";
-import {ERC721} from "solady/tokens/ERC721.sol";
-import {Ownable} from "solady/auth/Ownable.sol";
 import {CallbackConsumer} from "infernet-sdk/consumer/Callback.sol";
+import {PryntNFT} from "src/PryntNFT.sol";
 
-contract Prynt is Ownable, CallbackConsumer, ERC721 {
-    using LibString for uint256;
-
+contract Prynt is CallbackConsumer, PryntNFT {
     string private constant _COMPUTE_CONTAINER_ID = "prompt-to-nft";
     address private constant _COMPUTE_PAYMENT_TOKEN = address(0);
     uint16 private constant _COMPUTE_REDUNDANCY = 1;
@@ -18,25 +14,15 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
     /// @notice Duration of each round in seconds.
     uint256 public immutable roundDuration;
 
-    /// @notice Base token URI.
-    string public baseURI = "";
-
-    /// @notice Next token id.
-    uint256 public nextTokenId = 1;
-
     /// @notice Timestamp of when the next round can start.
     uint256 public nextRoundStart = block.timestamp;
 
     /// @notice Address with the ability to start the next round.
     address public roundLeader = msg.sender;
 
-    /// @notice Token metadata by id.
-    mapping(uint256 tokenId => string metadataHash) public tokenMetadata;
-
     /// @notice Pending compute requests by token id.
     mapping(uint256 tokenId => uint256 subscriptionId) public pendingRequests;
 
-    event SetBaseURI(string baseURI);
     event StartRound(uint256 nextTokenId, uint32 subscriptionId);
 
     error TooEarly();
@@ -48,8 +34,6 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
         address registry
     ) CallbackConsumer(registry) {
         roundDuration = roundDuration_;
-
-        _initializeOwner(msg.sender);
     }
 
     /**
@@ -79,41 +63,6 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
         nextRoundStart = block.timestamp + roundDuration;
         nextTokenId += 1;
         roundLeader = address(0);
-    }
-
-    /**
-     * @notice Sets `baseURI`.
-     * @param  baseURI_  string  Token base URI.
-     */
-    function setBaseURI(string memory baseURI_) external onlyOwner {
-        baseURI = baseURI_;
-
-        emit SetBaseURI(baseURI_);
-    }
-
-    /**
-     * @notice Returns the token collection name.
-     * @return string  Token collection name.
-     */
-    function name() public pure override returns (string memory) {
-        return "Prynt DAO";
-    }
-
-    /**
-     * @notice Returns the token collection symbol.
-     * @return string  Token collection symbol.
-     */
-    function symbol() public pure override returns (string memory) {
-        return "PRYNT";
-    }
-
-    /**
-     * @notice Returns the URI for a token ID.
-     * @param  id  uint256  The token id.
-     * @return     string   Token URI.
-     */
-    function tokenURI(uint256 id) public view override returns (string memory) {
-        return string.concat(baseURI, tokenMetadata[id]);
     }
 
     /**
