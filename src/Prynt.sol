@@ -18,14 +18,17 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
     /// @notice Duration of each round in seconds.
     uint256 public immutable roundDuration;
 
-    /// @notice Timestamp of when the next round starts.
-    uint256 public nextRoundStart;
-
     /// @notice Base token URI.
     string public baseURI = "";
 
     /// @notice Next token identifier.
     uint256 public nextTokenId = 1;
+
+    /// @notice Timestamp of when the next round can start.
+    uint256 public nextRoundStart = block.timestamp;
+
+    /// @notice Address with the ability to start the next round.
+    address public roundLeader = msg.sender;
 
     /// @notice Token metadata by id.
     mapping(uint256 tokenId => string metadataHash) public tokenMetadata;
@@ -34,14 +37,13 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
     event StartRound(uint32 subscriptionId);
 
     error TooEarly();
+    error NotLeader();
 
     constructor(
         uint256 roundDuration_,
-        uint256 nextRoundStart_,
         address registry
     ) CallbackConsumer(registry) {
         roundDuration = roundDuration_;
-        nextRoundStart = nextRoundStart_;
 
         _initializeOwner(msg.sender);
     }
@@ -66,8 +68,9 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
 
         _mint(address(this), nextTokenId);
 
-        nextRoundStart += roundDuration;
+        nextRoundStart = block.timestamp + roundDuration;
         nextTokenId += 1;
+        roundLeader = address(0);
     }
 
     /**
@@ -114,8 +117,9 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
     function startRound(
         string calldata prompt,
         uint256 paymentAmount
-    ) external onlyOwner returns (uint32 subscriptionId) {
-        if (nextRoundStart > block.timestamp) revert TooEarly();
+    ) external returns (uint32 subscriptionId) {
+        if (block.timestamp < nextRoundStart) revert TooEarly();
+        if (msg.sender != roundLeader) revert NotLeader();
 
         subscriptionId = _requestCompute(
             _COMPUTE_CONTAINER_ID,
