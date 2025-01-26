@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {LibString} from "solady/utils/LibString.sol";
 import {CallbackConsumer} from "infernet-sdk/consumer/Callback.sol";
 import {PryntNFT} from "src/PryntNFT.sol";
+import {PryntERC20} from "src/PryntERC20.sol";
 
 contract Prynt is CallbackConsumer, PryntNFT {
+    using LibString for uint256;
+
     string private constant _COMPUTE_CONTAINER_ID = "prompt-to-nft";
     address private constant _COMPUTE_PAYMENT_TOKEN = address(0);
     uint16 private constant _COMPUTE_REDUNDANCY = 1;
@@ -22,6 +26,9 @@ contract Prynt is CallbackConsumer, PryntNFT {
 
     /// @notice Pending compute requests by token id.
     mapping(uint256 tokenId => uint256 subscriptionId) public pendingRequests;
+
+    /// @notice Associated ERC20 token contract by token id.
+    mapping(uint256 tokenId => PryntERC20) public fungibleTokens;
 
     event StartRound(uint256 nextTokenId, uint32 subscriptionId);
 
@@ -61,6 +68,12 @@ contract Prynt is CallbackConsumer, PryntNFT {
         _mint(address(this), nextTokenId);
 
         nextRoundStart = block.timestamp + roundDuration;
+        string memory nextTokenIdString = nextTokenId.toString();
+        fungibleTokens[nextTokenId] = new PryntERC20(
+            string.concat("Prynt Round ", nextTokenIdString),
+            string.concat("PRYNT-", nextTokenIdString),
+            nextRoundStart
+        );
         nextTokenId += 1;
         roundLeader = address(0);
     }
