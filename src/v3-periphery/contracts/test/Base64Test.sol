@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.15;
 
-import '@openzeppelin/contracts/utils/Base64.sol';
+import '@openzeppelin-v4.9.6/contracts/utils/Base64.sol';
 
 contract Base64Test {
     function encode(bytes memory data) external pure returns (string memory) {

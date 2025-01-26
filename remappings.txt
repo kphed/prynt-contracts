@@ -3,6 +3,7 @@ forge-std/=lib/forge-std/src/
 solady/=lib/solady/src/
 infernet-sdk/=lib/infernet-sdk/src/
 @openzeppelin/=lib/openzeppelin-contracts/
+@openzeppelin-v4.9.6/=src/openzeppelin-contracts/
 @uniswap/v3-core/=src/v3-core/
 @uniswap/v3-periphery/=src/v3-periphery/
 

@@ -2,9 +2,9 @@
 pragma solidity >=0.7.6;
 pragma abicoder v2;
 
-import '@openzeppelin/contracts/utils/Strings.sol';
+import '@openzeppelin-v4.9.6/contracts/utils/Strings.sol';
 import '@uniswap/v3-core/contracts/libraries/BitMath.sol';
-import '@openzeppelin/contracts/utils/Base64.sol';
+import '@openzeppelin-v4.9.6/contracts/utils/Base64.sol';
 
 /// @title NFTSVG
 /// @notice Provides a function for generating an SVG associated with a Uniswap NFT

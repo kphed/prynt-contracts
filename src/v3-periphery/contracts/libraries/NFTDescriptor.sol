@@ -6,8 +6,8 @@ import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import '@uniswap/v3-core/contracts/libraries/TickMath.sol';
 import '@uniswap/v3-core/contracts/libraries/BitMath.sol';
 import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
-import '@openzeppelin/contracts/utils/Strings.sol';
-import '@openzeppelin/contracts/utils/Base64.sol';
+import '@openzeppelin-v4.9.6/contracts/utils/Strings.sol';
+import '@openzeppelin-v4.9.6/contracts/utils/Base64.sol';
 import './HexStrings.sol';
 import './NFTSVG.sol';
 
