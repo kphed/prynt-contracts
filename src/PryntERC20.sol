@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {LibString} from "solady/utils/LibString.sol";
 import {UniswapV3Pool} from "lib/v3-core/contracts/UniswapV3Pool.sol";
 import {TickMath} from "lib/v3-core/contracts/libraries/TickMath.sol";
 import {INonfungiblePositionManager} from "lib/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
@@ -21,9 +22,10 @@ contract PryntERC20 is ERC20 {
 
     event NewLeader(address leader);
 
+    error CannotTransfer();
+
     constructor(
-        string memory name_,
-        string memory symbol_,
+        uint256 round,
         uint256 roundEnd_,
         address positionManager,
         address quoteToken,
@@ -31,8 +33,9 @@ contract PryntERC20 is ERC20 {
         uint160 sqrtPriceX96,
         address treasury
     ) {
-        _name = name_;
-        _symbol = symbol_;
+        string memory roundStr = LibString.toString(round);
+        _name = string.concat("Prynt Round ", roundStr);
+        _symbol = string.concat("pryntROUND-", roundStr);
         roundEnd = roundEnd_;
         pool = INonfungiblePositionManager(positionManager)
             .createAndInitializePoolIfNecessary(
@@ -42,8 +45,9 @@ contract PryntERC20 is ERC20 {
                 sqrtPriceX96
             );
         int24 tickSpacing = UniswapV3Pool(pool).tickSpacing();
+        uint256 _totalSupply = totalSupply();
 
-        _mint(address(this), totalSupply());
+        _mint(address(this), _totalSupply);
         _approve(address(this), positionManager, type(uint256).max);
         INonfungiblePositionManager(positionManager).mint(
             INonfungiblePositionManager.MintParams(
@@ -52,7 +56,7 @@ contract PryntERC20 is ERC20 {
                 poolFee,
                 TickMath.getTickAtSqrtRatio(sqrtPriceX96),
                 (TickMath.MAX_TICK / tickSpacing) * tickSpacing,
-                totalSupply(),
+                _totalSupply,
                 0,
                 0,
                 0,
@@ -77,22 +81,41 @@ contract PryntERC20 is ERC20 {
     }
 
     /**
-     * @notice Check whether the token transfer recipient has the highest balance.
-     * @param  to  address  Token transfer recipient.
+     * @notice Check whether the token recipient has the highest balance if the round has not ended.
+     * @param  from  address  Token sender.
+     * @param  to    address  Token recipient.
+     */
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256
+    ) internal view override {
+        // If the round is over, the leader cannot transfer tokens unless they are burning.
+        if (
+            block.timestamp >= roundEnd &&
+            from == roundLeader &&
+            to != address(0)
+        ) revert CannotTransfer();
+    }
+
+    /**
+     * @notice Check whether the token recipient has the highest balance if the round has not ended.
+     * @param  to  address  Token recipient.
      */
     function _afterTokenTransfer(
         address,
         address to,
         uint256
     ) internal override {
-        if (
-            block.timestamp < roundEnd &&
-            pool != to &&
-            balanceOf(to) > balanceOf(roundLeader)
-        ) {
-            roundLeader = to;
+        if (block.timestamp < roundEnd) {
+            // Do not run the balance comparison logic if the recipient is any of the following addresses.
+            if (to == address(this) || to == pool) return;
 
-            emit NewLeader(to);
+            if (balanceOf(to) > balanceOf(roundLeader)) {
+                roundLeader = to;
+
+                emit NewLeader(to);
+            }
         }
     }
 }

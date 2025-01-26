@@ -8,9 +8,6 @@ contract PryntNFT is Ownable, ERC721 {
     /// @notice Base token URI.
     string public baseURI = "";
 
-    /// @notice Next token id.
-    uint256 public nextTokenId = 1;
-
     /// @notice Token metadata by id.
     mapping(uint256 tokenId => string metadataHash) public tokenMetadata;
 

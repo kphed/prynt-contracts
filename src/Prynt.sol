@@ -30,13 +30,19 @@ contract Prynt is CallbackConsumer, PryntNFT {
     /// @notice Address with the ability to start the next round.
     address public roundLeader = msg.sender;
 
-    /// @notice Pending compute requests by token id.
-    mapping(uint256 tokenId => uint256 subscriptionId) public pendingRequests;
+    /// @notice Round id.
+    uint256 public roundId = 1;
 
-    /// @notice Associated ERC20 token contract by token id.
-    mapping(uint256 tokenId => PryntERC20) public fungibleTokens;
+    /// @notice Pending compute requests by round id.
+    mapping(uint256 roundId => uint256 subscriptionId) public pendingRequests;
 
-    event StartRound(uint256 nextTokenId, uint32 subscriptionId);
+    /// @notice Associated ERC20 token contract by round id.
+    mapping(uint256 roundId => PryntERC20) public fungibleTokens;
+
+    event StartRound(
+        uint256 indexed nextRoundId,
+        uint32 indexed subscriptionId
+    );
 
     error TooEarly();
     error NotLeader();
@@ -54,8 +60,9 @@ contract Prynt is CallbackConsumer, PryntNFT {
     }
 
     /**
-     * @notice Handle compute request output.
-     * @param  output  bytes  Compute request output.
+     * @notice Handle compute request fulfillment.
+     * @param  subscriptionId  uint32  Compute request id.
+     * @param  output          bytes   Compute request output.
      */
     function _receiveCompute(
         uint32 subscriptionId,
@@ -68,13 +75,15 @@ contract Prynt is CallbackConsumer, PryntNFT {
         bytes32,
         uint256
     ) internal override {
-        // Prevent previous compute requests for the current `nextTokenId` from modifying state.
-        if (pendingRequests[nextTokenId] != subscriptionId)
+        uint256 currentRoundId = roundId;
+
+        // Prevent previous compute requests for the current round id from modifying state.
+        if (pendingRequests[currentRoundId] != subscriptionId)
             revert StaleRequest();
 
         (, bytes memory processedOutput) = abi.decode(output, (bytes, bytes));
         (
-            string memory metadata,
+            string memory metadataHash,
             bytes32 deploymentSalt,
             address quoteToken,
             uint24 poolFee,
@@ -83,12 +92,23 @@ contract Prynt is CallbackConsumer, PryntNFT {
                 processedOutput,
                 (string, bytes32, address, uint24, uint160)
             );
-        tokenMetadata[nextTokenId] = metadata;
-        nextRoundStart = block.timestamp + roundDuration;
-        string memory nextTokenIdString = nextTokenId.toString();
-        fungibleTokens[nextTokenId] = new PryntERC20{salt: deploymentSalt}(
-            string.concat("Prynt Round ", nextTokenIdString),
-            string.concat("pryntROUND-", nextTokenIdString),
+        tokenMetadata[currentRoundId] = metadataHash;
+
+        // Prevent the current round leader from calling `startRound` for the next round (unless they win again).
+        roundLeader = address(0);
+
+        unchecked {
+            // Won't overflow until `_requestCompute` is called ~9.57275870017495e+70 times.
+            nextRoundStart = block.timestamp + roundDuration;
+
+            // Won't overflow until `_requestCompute` is called ~1.157920892373162e+77 times.
+            ++roundId;
+        }
+
+        _mint(address(this), currentRoundId);
+
+        fungibleTokens[currentRoundId] = new PryntERC20{salt: deploymentSalt}(
+            currentRoundId,
             nextRoundStart,
             uniswapPositionManager,
             quoteToken,
@@ -96,11 +116,6 @@ contract Prynt is CallbackConsumer, PryntNFT {
             sqrtPriceX96,
             treasury
         );
-
-        _mint(address(this), nextTokenId);
-
-        nextTokenId += 1;
-        roundLeader = address(0);
     }
 
     /**
@@ -125,8 +140,9 @@ contract Prynt is CallbackConsumer, PryntNFT {
             _COMPUTE_PAYER,
             _COMPUTE_PROOF_VERIFIER
         );
-        pendingRequests[nextTokenId] = subscriptionId;
+        uint256 _roundId = roundId;
+        pendingRequests[_roundId] = subscriptionId;
 
-        emit StartRound(nextTokenId, subscriptionId);
+        emit StartRound(_roundId, subscriptionId);
     }
 }
