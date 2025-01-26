@@ -123,7 +123,7 @@ contract Prynt is Ownable, CallbackConsumer, ERC721 {
 
         subscriptionId = _requestCompute(
             _COMPUTE_CONTAINER_ID,
-            abi.encode(prompt, address(this)),
+            abi.encode(prompt),
             _COMPUTE_REDUNDANCY,
             _COMPUTE_PAYMENT_TOKEN,
             paymentAmount,
