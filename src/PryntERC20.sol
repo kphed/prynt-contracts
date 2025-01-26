@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 import {LibString} from "solady/utils/LibString.sol";
-import {UniswapV3Pool} from "lib/v3-core/contracts/UniswapV3Pool.sol";
-import {TickMath} from "lib/v3-core/contracts/libraries/TickMath.sol";
-import {INonfungiblePositionManager} from "lib/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
+import {UniswapV3Pool} from "src/v3-core/contracts/UniswapV3Pool.sol";
+import {TickMath} from "src/v3-core/contracts/libraries/TickMath.sol";
+import {INonfungiblePositionManager} from "src/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 import {ERC20} from "solady/tokens/ERC20.sol";
 
 contract PryntERC20 is ERC20 {
