@@ -10,10 +10,16 @@ contract Prynt is CallbackConsumer, PryntNFT {
     using LibString for uint256;
 
     string private constant _COMPUTE_CONTAINER_ID = "prompt-to-nft";
-    address private constant _COMPUTE_PAYMENT_TOKEN = address(0);
     uint16 private constant _COMPUTE_REDUNDANCY = 1;
+    address private constant _COMPUTE_PAYMENT_TOKEN = address(0);
     address private constant _COMPUTE_PAYER = address(0);
     address private constant _COMPUTE_PROOF_VERIFIER = address(0);
+
+    /// @notice Address of the DAO treasury.
+    address public immutable treasury;
+
+    /// @notice LP manager contract for deploying pools, adding liquidity, and collecting fees.
+    address public immutable uniswapPositionManager;
 
     /// @notice Duration of each round in seconds.
     uint256 public immutable roundDuration;
@@ -37,9 +43,13 @@ contract Prynt is CallbackConsumer, PryntNFT {
     error StaleRequest();
 
     constructor(
-        uint256 roundDuration_,
-        address registry
+        address registry,
+        address treasury_,
+        address uniswapPositionManager_,
+        uint256 roundDuration_
     ) CallbackConsumer(registry) {
+        treasury = treasury_;
+        uniswapPositionManager = uniswapPositionManager_;
         roundDuration = roundDuration_;
     }
 
@@ -63,17 +73,32 @@ contract Prynt is CallbackConsumer, PryntNFT {
             revert StaleRequest();
 
         (, bytes memory processedOutput) = abi.decode(output, (bytes, bytes));
-        tokenMetadata[nextTokenId] = abi.decode(processedOutput, (string));
+        (
+            string memory metadata,
+            bytes32 deploymentSalt,
+            address quoteToken,
+            uint24 poolFee,
+            uint160 sqrtPriceX96
+        ) = abi.decode(
+                processedOutput,
+                (string, bytes32, address, uint24, uint160)
+            );
+        tokenMetadata[nextTokenId] = metadata;
+        nextRoundStart = block.timestamp + roundDuration;
+        string memory nextTokenIdString = nextTokenId.toString();
+        fungibleTokens[nextTokenId] = new PryntERC20{salt: deploymentSalt}(
+            string.concat("Prynt Round ", nextTokenIdString),
+            string.concat("pryntROUND-", nextTokenIdString),
+            nextRoundStart,
+            uniswapPositionManager,
+            quoteToken,
+            poolFee,
+            sqrtPriceX96,
+            treasury
+        );
 
         _mint(address(this), nextTokenId);
 
-        nextRoundStart = block.timestamp + roundDuration;
-        string memory nextTokenIdString = nextTokenId.toString();
-        fungibleTokens[nextTokenId] = new PryntERC20(
-            string.concat("Prynt Round ", nextTokenIdString),
-            string.concat("PRYNT-", nextTokenIdString),
-            nextRoundStart
-        );
         nextTokenId += 1;
         roundLeader = address(0);
     }
