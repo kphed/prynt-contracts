@@ -29,7 +29,9 @@ contract PryntERC721 is Ownable, ERC721, Votes {
     }
 
     /**
-     * @dev Update voting units to reflect the token transfer.
+     * @notice Update voting units to reflect the token transfer.
+     * @param  from  address  Sender.
+     * @param  to    address  Recipient.
      */
     function _afterTokenTransfer(
         address from,
@@ -41,6 +43,7 @@ contract PryntERC721 is Ownable, ERC721, Votes {
 
     /**
      * @notice Returns the balance of `account`.
+     * @param  account  address  Account.
      */
     function _getVotingUnits(
         address account
