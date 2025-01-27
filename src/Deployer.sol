@@ -25,6 +25,8 @@ contract Deployer {
         address registry,
         address uniswapPositionManager,
         uint256 roundDuration,
+        string memory initialPrompt,
+        uint256 initialPaymentAmount,
         uint256 timelockMinDelay,
         uint48 _votingDelay,
         uint32 _votingPeriod,
@@ -42,7 +44,9 @@ contract Deployer {
             registry,
             address(timelock),
             uniswapPositionManager,
-            roundDuration
+            roundDuration,
+            initialPrompt,
+            initialPaymentAmount
         );
         governor = new PryntGovernor(
             prynt,

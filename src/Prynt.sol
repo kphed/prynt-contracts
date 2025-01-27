@@ -52,11 +52,15 @@ contract Prynt is CallbackConsumer, PryntERC721 {
         address registry,
         address treasury_,
         address uniswapPositionManager_,
-        uint256 roundDuration_
+        uint256 roundDuration_,
+        string memory initialPrompt,
+        uint256 initialPaymentAmount
     ) CallbackConsumer(registry) {
         treasury = treasury_;
         uniswapPositionManager = uniswapPositionManager_;
         roundDuration = roundDuration_;
+
+        _startRound(initialPrompt, initialPaymentAmount);
     }
 
     /**
@@ -124,13 +128,10 @@ contract Prynt is CallbackConsumer, PryntERC721 {
      * @param  paymentAmount   uint256  Compute request payment amount.
      * @return subscriptionId  uint32   Compute request id.
      */
-    function startRound(
-        string calldata prompt,
+    function _startRound(
+        string memory prompt,
         uint256 paymentAmount
-    ) external returns (uint32 subscriptionId) {
-        if (block.timestamp < nextRoundStart) revert TooEarly();
-        if (msg.sender != roundLeader) revert NotLeader();
-
+    ) internal returns (uint32 subscriptionId) {
         subscriptionId = _requestCompute(
             _COMPUTE_CONTAINER_ID,
             abi.encode(prompt),
@@ -144,5 +145,20 @@ contract Prynt is CallbackConsumer, PryntERC721 {
         pendingRequests[_roundId] = subscriptionId;
 
         emit StartRound(_roundId, subscriptionId);
+    }
+
+    /**
+     * @notice Start a round.
+     * @param  prompt          string   Token id.
+     * @param  paymentAmount   uint256  Compute request payment amount.
+     */
+    function startRound(
+        string calldata prompt,
+        uint256 paymentAmount
+    ) external returns (uint32) {
+        if (block.timestamp < nextRoundStart) revert TooEarly();
+        if (msg.sender != roundLeader) revert NotLeader();
+
+        return _startRound(prompt, paymentAmount);
     }
 }
