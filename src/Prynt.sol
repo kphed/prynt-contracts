@@ -7,8 +7,6 @@ import {PryntERC721} from "src/PryntERC721.sol";
 import {PryntERC20} from "src/PryntERC20.sol";
 
 contract Prynt is CallbackConsumer, PryntERC721 {
-    using LibString for uint256;
-
     string private constant _COMPUTE_CONTAINER_ID = "prompt-to-nft";
     uint16 private constant _COMPUTE_REDUNDANCY = 1;
     address private constant _COMPUTE_PAYMENT_TOKEN = address(0);
@@ -75,7 +73,9 @@ contract Prynt is CallbackConsumer, PryntERC721 {
         bytes32,
         uint256
     ) internal override {
-        // Prevent previous compute requests for the current round id from modifying state.
+        // Prevent previous compute requests for the current round id from modifying state, ensuring
+        // that only the last `initiateNewRound` call is respected. This is useful in the event where
+        // the leader wants to change their prompt, or the compute request needs a higher payment amount.
         if (pendingRequests[roundId] != subscriptionId) revert StaleRequest();
 
         unchecked {
@@ -87,6 +87,7 @@ contract Prynt is CallbackConsumer, PryntERC721 {
         (, bytes memory processedOutput) = abi.decode(output, (bytes, bytes));
         (
             string memory metadataHash,
+            // @dev Unsafe to delegate computing of fungible token and LP-related params in production.
             bytes32 deploymentSalt,
             address quoteToken,
             uint24 poolFee,
@@ -108,7 +109,7 @@ contract Prynt is CallbackConsumer, PryntERC721 {
             )
         );
 
-        // Mint the NFT for the ERC20 token contract, who will handle its dispersal to the winner.
+        // Mint the NFT for the ERC20 token contract which will handle its dispersal to the winner.
         _mint(fungibleTokens[_roundId], _roundId);
 
         emit NewRound(_roundId, fungibleTokens[_roundId]);
