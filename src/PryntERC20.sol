@@ -88,7 +88,7 @@ contract PryntERC20 is ERC20 {
         address to,
         uint256
     ) internal view override {
-        // If the round is over, the leader cannot transfer tokens unless they are burning.
+        // If the round is over, the leader cannot transfer tokens unless they are burning them.
         if (
             block.timestamp >= roundEnd &&
             from == roundLeader &&
@@ -109,7 +109,7 @@ contract PryntERC20 is ERC20 {
             // Do not run the balance comparison logic if the recipient is any of the following addresses.
             if (to == address(this) || to == pool) return;
 
-            if (balanceOf(to) > balanceOf(roundLeader)) {
+            if (to != roundLeader && balanceOf(to) > balanceOf(roundLeader)) {
                 roundLeader = to;
 
                 emit NewLeader(to);
@@ -141,7 +141,7 @@ contract PryntERC20 is ERC20 {
         // Burn the round leader's tokens as a consolation prize to those who didn't win.
         _burn(msg.sender, balanceOf(msg.sender));
 
-        prynt.safeTransferFrom(address(this), msg.sender, 0);
+        prynt.safeTransferFrom(address(this), msg.sender, round);
 
         emit ClaimNFT();
     }
