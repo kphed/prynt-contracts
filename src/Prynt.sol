@@ -7,7 +7,7 @@ import {PryntERC721} from "src/PryntERC721.sol";
 import {PryntERC20} from "src/PryntERC20.sol";
 
 contract Prynt is CallbackConsumer, PryntERC721 {
-    string private constant _COMPUTE_CONTAINER_ID = "prompt-to-nft";
+    string private constant _COMPUTE_CONTAINER_ID = "prynt";
     uint16 private constant _COMPUTE_REDUNDANCY = 1;
     address private constant _COMPUTE_PAYMENT_TOKEN = address(0);
     address private constant _COMPUTE_PAYER = address(0);
@@ -134,7 +134,7 @@ contract Prynt is CallbackConsumer, PryntERC721 {
 
         subscriptionId = _requestCompute(
             _COMPUTE_CONTAINER_ID,
-            abi.encode(prompt),
+            abi.encode(tokenMetadata[_roundId], prompt),
             _COMPUTE_REDUNDANCY,
             _COMPUTE_PAYMENT_TOKEN,
             paymentAmount,
