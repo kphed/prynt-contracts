@@ -46,15 +46,11 @@ contract Prynt is CallbackConsumer, PryntERC721 {
         address registry,
         address treasury_,
         address uniswapPositionManager_,
-        uint256 roundDuration_,
-        string memory initialPrompt,
-        uint256 initialPaymentAmount
+        uint256 roundDuration_
     ) CallbackConsumer(registry) {
         treasury = treasury_;
         uniswapPositionManager = uniswapPositionManager_;
         roundDuration = roundDuration_;
-
-        _initiateNewRound(initialPrompt, initialPaymentAmount);
     }
 
     /**
@@ -74,7 +70,7 @@ contract Prynt is CallbackConsumer, PryntERC721 {
         uint256
     ) internal override {
         // Prevent previous compute requests for the current round id from modifying state, ensuring
-        // that only the last `initiateNewRound` call is respected. This is useful in the event where
+        // that only the most recent `initiateNewRound` call is respected. This is useful in the event where
         // the leader wants to change their prompt, or the compute request needs a higher payment amount.
         if (pendingRequests[roundId] != subscriptionId) revert StaleRequest();
 
@@ -117,14 +113,23 @@ contract Prynt is CallbackConsumer, PryntERC721 {
 
     /**
      * @notice Initiate a new round.
-     * @param  prompt          string   Token id.
+     * @param  prompt          string   NFT image prompt.
      * @param  paymentAmount   uint256  Compute request payment amount.
      * @return subscriptionId  uint32   Compute request id.
      */
-    function _initiateNewRound(
-        string memory prompt,
+    function initiateNewRound(
+        string calldata prompt,
         uint256 paymentAmount
-    ) internal returns (uint32 subscriptionId) {
+    ) external returns (uint32 subscriptionId) {
+        // Allow the contract owner to initiate a new round to kickstart the game,
+        // or in the event that the current round leader hasn't done so in a timely manner.
+        if (msg.sender != owner()) {
+            PryntERC20 fungibleToken = PryntERC20(fungibleTokens[roundId]);
+
+            if (block.timestamp < fungibleToken.roundEnd()) revert TooEarly();
+            if (msg.sender != fungibleToken.roundLeader()) revert NotLeader();
+        }
+
         subscriptionId = _requestCompute(
             _COMPUTE_CONTAINER_ID,
             abi.encode(prompt),
@@ -138,22 +143,5 @@ contract Prynt is CallbackConsumer, PryntERC721 {
         pendingRequests[_roundId] = subscriptionId;
 
         emit InitiateNewRound(msg.sender, _roundId, subscriptionId);
-    }
-
-    /**
-     * @notice Initiate a new round.
-     * @param  prompt         string   Token id.
-     * @param  paymentAmount  uint256  Compute request payment amount.
-     */
-    function initiateNewRound(
-        string calldata prompt,
-        uint256 paymentAmount
-    ) external returns (uint32) {
-        PryntERC20 fungibleToken = PryntERC20(fungibleTokens[roundId]);
-
-        if (block.timestamp < fungibleToken.roundEnd()) revert TooEarly();
-        if (msg.sender != fungibleToken.roundLeader()) revert NotLeader();
-
-        return _initiateNewRound(prompt, paymentAmount);
     }
 }
