@@ -7,6 +7,7 @@ import {PryntERC721} from "src/PryntERC721.sol";
 import {PryntERC20} from "src/PryntERC20.sol";
 
 contract Prynt is CallbackConsumer, PryntERC721 {
+    // TODO: Update these compute request params to reflect a production environment.
     string private constant _COMPUTE_CONTAINER_ID = "prynt";
     uint16 private constant _COMPUTE_REDUNDANCY = 1;
     address private constant _COMPUTE_PAYMENT_TOKEN = address(0);
@@ -77,7 +78,7 @@ contract Prynt is CallbackConsumer, PryntERC721 {
         (, bytes memory processedOutput) = abi.decode(output, (bytes, bytes));
         (
             string memory metadataHash,
-            // @dev Unsafe to delegate computing of fungible token and LP-related params in production.
+            // TODO: Determine whether computing of LP params can be safely delegated in production.
             bytes32 deploymentSalt,
             address quoteToken,
             uint24 poolFee,
@@ -134,6 +135,8 @@ contract Prynt is CallbackConsumer, PryntERC721 {
 
         subscriptionId = _requestCompute(
             _COMPUTE_CONTAINER_ID,
+            // Include token metadata for the current round in request, since the next
+            // round's metadata will be derived from the metadata + leader's prompt.
             abi.encode(tokenMetadata[_roundId], prompt),
             _COMPUTE_REDUNDANCY,
             _COMPUTE_PAYMENT_TOKEN,
