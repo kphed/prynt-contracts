@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 import {LibString} from "solady/utils/LibString.sol";
-import {UniswapV3Pool} from "src/v3-core/contracts/UniswapV3Pool.sol";
-import {TickMath} from "src/v3-core/contracts/libraries/TickMath.sol";
-import {INonfungiblePositionManager} from "src/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
+import {IUniswapV3Pool} from "src/interfaces/IUniswapV3Pool.sol";
+import {TickMath} from "src/lib/TickMath.sol";
+import {INonfungiblePositionManager} from "src/interfaces/INonfungiblePositionManager.sol";
 import {ERC721} from "solady/tokens/ERC721.sol";
 import {ERC20} from "solady/tokens/ERC20.sol";
 
@@ -56,7 +56,7 @@ contract PryntERC20 is ERC20 {
                 poolFee,
                 sqrtPriceX96
             );
-        int24 tickSpacing = UniswapV3Pool(pool).tickSpacing();
+        int24 tickSpacing = IUniswapV3Pool(pool).tickSpacing();
         uint256 _totalSupply = totalSupply();
 
         _mint(address(this), _totalSupply);
